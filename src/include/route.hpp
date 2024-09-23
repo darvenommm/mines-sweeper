@@ -10,7 +10,7 @@ class Route
 public:
   virtual ~Route() = default;
 
-  virtual void handle_event(sf::Event &, Router &) = 0;
+  virtual void handle_event(sf::Event &, Router &, sf::RenderWindow &) = 0;
   virtual void update(float delta_time) = 0;
   virtual void render(sf::RenderWindow &) = 0;
 };

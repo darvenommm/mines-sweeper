@@ -2,13 +2,13 @@
 #include "game_route.hpp"
 #include "menu_route.hpp"
 
-void GameRoute::handle_event(sf::Event &event, Router &router)
+void GameRoute::handle_event(sf::Event &event, Router &router, sf::RenderWindow &)
 {
   if (event.type == sf::Event::KeyReleased)
     switch (event.key.scancode)
     {
     case sf::Keyboard::Scancode::Escape:
-      router.change_route(std::make_unique<MenuRoute>());
+      router.change_route(std::make_unique<MenuRoute>(MenuRoute{MenuRoute::Routes::GAME}));
       break;
 
     default:

@@ -21,7 +21,7 @@ void Engine::run() const
       if (event->type == sf::Event::Closed)
         window->close();
 
-      router->get_route().handle_event(*event, *router);
+      router->get_route().handle_event(*event, *router, *window);
     }
 
     router->get_route().update(clock->restart().asSeconds());
@@ -36,7 +36,7 @@ void Engine::init_window()
   if (window)
     return;
 
-  auto new_window{std::make_unique<sf::RenderWindow>(sf::VideoMode::getDesktopMode(), L"Mine Sweeper")};
+  auto new_window{std::make_unique<sf::RenderWindow>(sf::VideoMode::getDesktopMode(), L"Mine Sweeper", sf::Style::Fullscreen)};
   window.reset(new_window.release());
 }
 

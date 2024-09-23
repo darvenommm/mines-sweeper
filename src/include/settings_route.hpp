@@ -10,7 +10,7 @@ class SettingsRoute : public Route
 public:
   ~SettingsRoute() override = default;
 
-  void handle_event(sf::Event &, Router &) override;
+  void handle_event(sf::Event &, Router &, sf::RenderWindow &) override;
   void update(float delta_time);
   void render(sf::RenderWindow &);
 };

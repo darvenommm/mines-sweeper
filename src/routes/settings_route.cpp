@@ -2,13 +2,13 @@
 #include "settings_route.hpp"
 #include "menu_route.hpp"
 
-void SettingsRoute::handle_event(sf::Event &event, Router &router)
+void SettingsRoute::handle_event(sf::Event &event, Router &router, sf::RenderWindow &)
 {
   if (event.type == sf::Event::KeyReleased)
     switch (event.key.scancode)
     {
     case sf::Keyboard::Scancode::Escape:
-      router.change_route(std::make_unique<MenuRoute>());
+      router.change_route(std::make_unique<MenuRoute>(MenuRoute{MenuRoute::Routes::SETTINGS}));
       break;
 
     default:
