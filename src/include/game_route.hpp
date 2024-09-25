@@ -9,6 +9,13 @@
 class GameRoute : public Route
 {
 public:
+  struct DrawingInfo
+  {
+    float cell_side{0};
+    float width_margin{0};
+    float height_margin{0};
+  };
+
   GameRoute();
   ~GameRoute() override = default;
 
@@ -24,6 +31,9 @@ private:
 
   void init_game();
   void draw_game(sf::RenderWindow &) const;
+  void handle_opening_mine_event(sf::Event &, sf::RenderWindow &);
+
+  const DrawingInfo get_drawing_info(sf::RenderWindow &) const;
 };
 
 #endif

@@ -35,6 +35,7 @@ private:
   Status status{Status::UNKNOWN};
 
   std::unique_ptr<Mines> mines{nullptr};
+  void init_start_mines();
 
   // x and y it's the coordinates of a start user opened mine ;)
   void set_mines(unsigned x, unsigned y);
