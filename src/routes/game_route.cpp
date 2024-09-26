@@ -6,8 +6,6 @@ const unsigned GAME_MARGIN = 20;
 const sf::Color CELL_COLOR{192, 192, 192}; // grey color
 const unsigned CELL_OUTLINE_WIDTH = 2;
 
-GameRoute::GameRoute() { init_game(); }
-
 void GameRoute::handle_event(sf::Event &event, Router &router, sf::RenderWindow &window)
 {
   if (event.type == sf::Event::KeyReleased)
@@ -40,7 +38,7 @@ void GameRoute::render(sf::RenderWindow &window)
   window.display();
 }
 
-void GameRoute::init_game() { game = std::make_unique<Game>(width, height, mines_count); }
+std::unique_ptr<Game> GameRoute::init_game() { return std::make_unique<Game>(width, height, mines_count); }
 
 const GameRoute::DrawingInfo GameRoute::get_drawing_info(sf::RenderWindow &window) const
 {
@@ -82,8 +80,17 @@ void GameRoute::draw_game(sf::RenderWindow &window) const
         cell.setFillColor(CELL_COLOR);
         break;
 
-      default:
+      case Mine::Status::WITH_FLAG:
+        cell.setFillColor(sf::Color::Red);
+        break;
+
+      case Mine::Status::WITH_BOMB:
+        cell.setFillColor(sf::Color::Black);
+        break;
+
+      case Mine::Status::WITHOUT_BOMB:
         cell.setFillColor(sf::Color::Magenta);
+        break;
       }
 
       window.draw(cell);

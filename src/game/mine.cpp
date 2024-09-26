@@ -6,7 +6,7 @@ Mine::Mine(bool has_mine, unsigned closest_mines_count)
 void Mine::open()
 {
   if (status == Status::NOT_OPENED)
-    status = has_mine ? Status::WITH_BOMB : Status::WITH_BOMB;
+    status = has_mine ? Status::WITH_BOMB : Status::WITHOUT_BOMB;
 }
 
 void Mine::toggle_flag()
@@ -27,5 +27,7 @@ void Mine::toggle_flag()
 }
 
 Mine::Status Mine::get_status() const { return status; }
+
+bool Mine::get_has_mine() const { return has_mine; }
 
 unsigned Mine::get_closest_mines_count() const { return closest_mines_count; }

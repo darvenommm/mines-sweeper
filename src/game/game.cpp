@@ -4,18 +4,19 @@
 #include "game.hpp"
 
 Game::Game(unsigned width, unsigned height, unsigned mines_count)
-    : width{width}, height{height}, mines_count{mines_count}, status{Status::UNKNOWN}
+    : width{width}, height{height}, mines_count{mines_count}
 {
-  if (width * height > mines_count)
+  if (width * height >= mines_count)
     mines_count = width * height - 1;
-
-  init_start_mines();
 }
 
 void Game::open_mine(unsigned x, unsigned y)
 {
-  if (!mines)
+  if (status == Status::NOT_STARTED)
+  {
     set_mines(x, y);
+    status = Status::STARTED;
+  }
 
   (*mines)[y * width + x].open();
 }
@@ -26,81 +27,97 @@ Game::Status Game::get_status() const { return status; }
 
 const Game::Mines &Game::get_mines() const { return *mines; }
 
-void Game::init_start_mines()
+std::unique_ptr<Game::Mines> Game::init_start_mines()
 {
-  auto not_initialized_mines{std::make_unique<Game::Mines>()};
+  auto empty_mines{std::make_unique<Game::Mines>()};
 
   for (unsigned i{0}; i < height; ++i)
     for (unsigned j{0}; j < width; ++j)
-      not_initialized_mines->push_back(Mine{false, 0});
+      empty_mines->push_back(Mine{});
 
-  mines = std::move(not_initialized_mines);
+  return empty_mines;
 }
 
 void Game::set_mines(unsigned x, unsigned y)
 {
-  auto layout{create_layout(x, y)};
-  mines = create_mines_from_layout(*layout);
+  set_layout(x, y);
+  set_final_mines();
 }
 
-std::unique_ptr<Game::Layout> Game::create_layout(unsigned x, unsigned y) const
+void Game::set_layout(unsigned x, unsigned y)
 {
   std::srand(std::time(nullptr));
 
   auto layout{std::make_unique<Game::Layout>()};
-  layout->resize(width * height);
 
   float count_of_mines{static_cast<float>(mines_count)};
-  float rest{static_cast<float>(width * height)};
+  float rest{static_cast<float>(width * height) - 1};
 
   for (unsigned i{0}; i < height; ++i)
     for (unsigned j{0}; j < width; ++j, --rest)
     {
-      if (i == y && x == j)
+      if (x == j && y == i)
       {
-        (*layout)[i * width + j] = false;
+        layout->push_back(Mine{false});
         continue;
       }
 
       float real_change{count_of_mines / rest};
       float random{static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX)};
+      bool has_mine{real_change > random};
 
-      (*layout)[i * width + j] = real_change > random;
+      layout->push_back(Mine{has_mine});
+
+      if (has_mine)
+        --count_of_mines;
     }
 
-  return layout;
+  mines = std::move(layout);
 }
 
-std::unique_ptr<Game::Mines> Game::create_mines_from_layout(Game::Layout &layout) const
+void Game::set_final_mines()
 {
-  auto result_mines{std::make_unique<Game::Mines>()};
+  auto final_mines{std::make_unique<Game::Mines>()};
 
   for (unsigned i{0}; i < height; ++i)
     for (unsigned j{0}; j < width; ++j)
     {
-      bool has_mine{layout[i * width + j]};
-      unsigned closest_mines_count = count_closest_mines(j, i, layout);
+      bool has_mine{(*mines)[i * width + j].get_has_mine()};
+      unsigned closest_mines_count = count_closest_mines(j, i);
 
-      mines->push_back(Mine{has_mine, closest_mines_count});
+      final_mines->push_back(Mine{has_mine, closest_mines_count});
     }
 
-  return result_mines;
+  mines = std::move(final_mines);
 }
 
-unsigned Game::count_closest_mines(unsigned x, unsigned y, Game::Layout &layout) const
+unsigned Game::count_closest_mines(unsigned x, unsigned y) const
 {
   unsigned result_count{0};
 
-  int start_x{std::max(static_cast<int>(x) - 1, 0)};
-  int end_x{std::min(static_cast<int>(y) + 1, static_cast<int>(width))};
-
-  int start_y{std::max(static_cast<int>(x) - 1, 0)};
-  int end_y{std::min(static_cast<int>(y) + 1, static_cast<int>(height))};
-
-  for (int i{start_y}; i < end_y; ++i)
-    for (int j{start_x}; j < end_x; ++j)
-      if (layout[i * width + j])
-        ++result_count;
+  std::function<void()> callback_if_has_closest_mine{
+      [&result_count]
+      { ++result_count; }};
+  walk_around_cell(x, y, callback_if_has_closest_mine);
 
   return result_count;
+}
+
+void Game::walk_around_cell(unsigned x, unsigned y, std::function<void()> callback_if_mine) const
+{
+  unsigned start_x{static_cast<unsigned>(std::max<int>(static_cast<int>(x) - 1, 0))};
+  unsigned end_x{std::min<unsigned>(x + 1, width - 1)};
+
+  unsigned start_y{static_cast<unsigned>(std::max<int>(static_cast<int>(y) - 1, 0))};
+  unsigned end_y{std::min<unsigned>(y + 1, height - 1)};
+
+  for (unsigned i{start_y}; i <= end_y; ++i)
+    for (unsigned j{start_x}; j <= end_x; ++j)
+    {
+      if (y == i && x == j)
+        continue;
+
+      if ((*mines)[i * width + j].get_has_mine())
+        callback_if_mine();
+    }
 }

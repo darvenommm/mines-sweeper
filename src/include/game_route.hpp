@@ -16,7 +16,6 @@ public:
     float height_margin{0};
   };
 
-  GameRoute();
   ~GameRoute() override = default;
 
   void handle_event(sf::Event &, Router &, sf::RenderWindow &) override;
@@ -24,12 +23,13 @@ public:
   void render(sf::RenderWindow &);
 
 private:
-  unsigned width{10};
-  unsigned height{10};
-  unsigned mines_count{20};
-  std::unique_ptr<Game> game{nullptr};
+  unsigned width{3};
+  unsigned height{3};
+  unsigned mines_count{8};
 
-  void init_game();
+  std::unique_ptr<Game> game{init_game()};
+  std::unique_ptr<Game> init_game();
+
   void draw_game(sf::RenderWindow &) const;
   void handle_opening_mine_event(sf::Event &, sf::RenderWindow &);
 

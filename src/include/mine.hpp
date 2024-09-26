@@ -12,11 +12,13 @@ public:
     WITHOUT_BOMB,
   };
 
-  Mine(bool has_mine, unsigned closest_mines_count);
+  Mine(bool has_mine = false, unsigned closest_mines_count = 0);
   virtual ~Mine() = default;
 
   void open();
   void toggle_flag();
+
+  bool get_has_mine() const;
   unsigned get_closest_mines_count() const;
   Status get_status() const;
 
