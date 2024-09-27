@@ -25,7 +25,7 @@ add_executable(
     src/routes/settings_route.cpp
     src/routes/game_route.cpp
     src/game/game.cpp
-    src/game/mine.cpp
+    src/game/cell.cpp
 )
 
 add_custom_target(copy_assets

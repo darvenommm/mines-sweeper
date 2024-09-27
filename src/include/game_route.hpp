@@ -23,9 +23,9 @@ public:
   void render(sf::RenderWindow &);
 
 private:
-  unsigned width{3};
-  unsigned height{3};
-  unsigned mines_count{8};
+  unsigned width{10};
+  unsigned height{10};
+  unsigned mines_count{25};
 
   std::unique_ptr<Game> game{init_game()};
   std::unique_ptr<Game> init_game();

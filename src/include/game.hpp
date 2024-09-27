@@ -5,47 +5,67 @@
 #include <vector>
 #include <functional>
 
-#include "mine.hpp"
+#include "cell.hpp"
 
 class Game
 {
 public:
-  using Mines = std::vector<Mine>;
-  using Layout = Mines;
-
-  enum class Status : int
+  // enums
+  enum class State : int
   {
     NOT_STARTED,
-    STARTED,
+    IN_PROGRESS,
     DEFEATED,
     WINNED,
   };
 
-  Game(unsigned width, unsigned height, unsigned mines_count);
+  enum class LayoutCell
+  {
+    NOT_HAS_MINE,
+    HAS_MINE,
+    GUARANTEE_NOT_MINE,
+  };
+
+  // types
+  using Cells = std::vector<Cell>;
+  using Layout = std::vector<LayoutCell>;
+  using WalkAroundCallback = std::function<void(unsigned x, unsigned y)>;
+
+  // lifecycle
+  explicit Game(unsigned width = 10, unsigned height = 10, unsigned mines_count = 20);
   virtual ~Game() = default;
 
-  void open_mine(unsigned x, unsigned y);
-  void add_flag(unsigned x, unsigned y);
+  // public methods
+  void open_cell(unsigned x, unsigned y);
+  void toggle_cell_flag(unsigned x, unsigned y);
 
-  const Mines &get_mines() const;
-  Status get_status() const;
+  const Cells &get_cells() const;
+  State get_state() const;
 
 private:
-  unsigned width{10};
-  unsigned height{10};
-  unsigned mines_count{20};
-  Status status{Status::NOT_STARTED};
+  // params
+  unsigned width;
+  unsigned height;
+  unsigned mines_count;
+  State state{State::NOT_STARTED};
 
-  std::unique_ptr<Mines> init_start_mines();
-  std::unique_ptr<Mines> mines{init_start_mines()};
+  std::unique_ptr<Cells> create_empty_cells() const;
+  std::unique_ptr<Cells> cells{create_empty_cells()};
 
-  // x and y it's the coordinates of a start user opened mine ;)
-  void set_mines(unsigned x, unsigned y);
-  void set_layout(unsigned x, unsigned y);
-  unsigned count_closest_mines(unsigned x, unsigned y) const;
-  void set_final_mines();
+  // initialize cells
+  void init_cells(unsigned x, unsigned y);
+  std::unique_ptr<Layout> create_layout() const;
+  unsigned set_cells_with_guarantee(unsigned x, unsigned y, Layout &) const;
+  void fill_layout_randomly(Layout &) const;
+  std::unique_ptr<Cells> create_cells(Layout &) const;
+  unsigned count_closest_mines(unsigned x, unsigned y, Layout &) const;
 
-  void walk_around_cell(unsigned x, unsigned y, std::function<void()> callback_if_has_closest_mine) const;
+  // main methods
+  void open_cells_recursive(unsigned x, unsigned y);
+  void open_all_cells();
+
+  // helpers
+  void walk_around_cell(unsigned x, unsigned y, WalkAroundCallback callback) const;
 };
 
 #endif

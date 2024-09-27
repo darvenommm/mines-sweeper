@@ -1,3 +1,6 @@
+#include <format>
+
+#include "assets_manager.hpp"
 #include "router.hpp"
 #include "game_route.hpp"
 #include "menu_route.hpp"
@@ -68,32 +71,28 @@ void GameRoute::draw_game(sf::RenderWindow &window) const
   for (unsigned i{0}; i < height; ++i)
     for (unsigned j{0}; j < width; ++j)
     {
-      sf::RectangleShape cell{sf::Vector2f{info.cell_side, info.cell_side}};
-      cell.setPosition(sf::Vector2f{info.cell_side * j + info.width_margin, info.cell_side * i + info.height_margin});
-      cell.setOutlineThickness(static_cast<float>(CELL_OUTLINE_WIDTH));
-      cell.setOutlineColor(sf::Color::Black);
+      sf::RectangleShape cell_shape{sf::Vector2f{info.cell_side, info.cell_side}};
+      cell_shape.setPosition(sf::Vector2f{info.cell_side * j + info.width_margin, info.cell_side * i + info.height_margin});
+      cell_shape.setOutlineThickness(static_cast<float>(CELL_OUTLINE_WIDTH));
+      cell_shape.setOutlineColor(sf::Color::Black);
 
-      auto mine_status{game->get_mines()[i * width + j].get_status()};
-      switch (mine_status)
+      Cell cell{game->get_cells()[i * width + j]};
+      switch (cell.get_state())
       {
-      case Mine::Status::NOT_OPENED:
-        cell.setFillColor(CELL_COLOR);
+      case Cell::State::NOT_OPENED:
+        cell_shape.setFillColor(CELL_COLOR);
         break;
 
-      case Mine::Status::WITH_FLAG:
-        cell.setFillColor(sf::Color::Red);
+      case Cell::State::WITH_FLAG:
+        cell_shape.setFillColor(sf::Color::Red);
         break;
 
-      case Mine::Status::WITH_BOMB:
-        cell.setFillColor(sf::Color::Black);
-        break;
-
-      case Mine::Status::WITHOUT_BOMB:
-        cell.setFillColor(sf::Color::Magenta);
+      case Cell::State::OPENED:
+        cell_shape.setFillColor(cell.get_has_mine() ? sf::Color::Black : sf::Color::Magenta);
         break;
       }
 
-      window.draw(cell);
+      window.draw(cell_shape);
     }
 }
 
@@ -111,5 +110,5 @@ void GameRoute::handle_opening_mine_event(sf::Event &event, sf::RenderWindow &wi
   bool correct_height_cell = height_cell > 0 && height_cell < height;
 
   if (correct_width_cell && correct_height_cell)
-    game->open_mine(static_cast<unsigned>(width_cell), static_cast<unsigned>(height_cell));
+    game->open_cell(static_cast<unsigned>(width_cell), static_cast<unsigned>(height_cell));
 }
