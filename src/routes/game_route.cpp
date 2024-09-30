@@ -1,4 +1,5 @@
 #include <format>
+#include <iostream>
 
 #include "assets_manager.hpp"
 #include "router.hpp"
@@ -11,19 +12,41 @@ const unsigned CELL_OUTLINE_WIDTH = 2;
 
 void GameRoute::handle_event(sf::Event &event, Router &router, sf::RenderWindow &window)
 {
-  if (event.type == sf::Event::KeyReleased)
-    switch (event.key.scancode)
-    {
-    case sf::Keyboard::Scancode::Escape:
+  switch (event.type)
+  {
+  case sf::Event::KeyReleased:
+    if (event.key.scancode == sf::Keyboard::Scancode::Escape)
       router.change_route(std::make_unique<MenuRoute>(MenuRoute{MenuRoute::Routes::GAME}));
-      return;
+    break;
 
-    default:
-      return;
+  case sf::Event::MouseButtonReleased:
+  {
+    sf::Mouse::Button button{event.mouseButton.button};
+
+    if (button == sf::Mouse::Left)
+    {
+      GameRoute::HandleCellCallback leftClickCallback{
+          [this](unsigned x, unsigned y)
+          {
+            game->open_cell(x, y);
+          }};
+      handle_cell_click_event(event, window, leftClickCallback);
     }
+    else if (button == sf::Mouse::Right)
+    {
+      GameRoute::HandleCellCallback rightClickCallback{
+          [this](unsigned x, unsigned y)
+          {
+            game->toggle_cell_flag(x, y);
+          }};
+      handle_cell_click_event(event, window, rightClickCallback);
+    }
+    break;
+  }
 
-  if (event.type == sf::Event::MouseButtonReleased)
-    handle_opening_mine_event(event, window);
+  default:
+    break;
+  }
 }
 
 void GameRoute::update(float) {}
@@ -43,7 +66,7 @@ void GameRoute::render(sf::RenderWindow &window)
 
 std::unique_ptr<Game> GameRoute::init_game() { return std::make_unique<Game>(width, height, mines_count); }
 
-const GameRoute::DrawingInfo GameRoute::get_drawing_info(sf::RenderWindow &window) const
+const GameRoute::CellsInfo GameRoute::get_cells_info(sf::RenderWindow &window) const
 {
   unsigned window_width{window.getSize().x};
   unsigned window_height{window.getSize().y};
@@ -58,7 +81,7 @@ const GameRoute::DrawingInfo GameRoute::get_drawing_info(sf::RenderWindow &windo
   float height_rest{window_height - GAME_MARGIN * 2 - cell_side * height};
   float height_margin{static_cast<float>(GAME_MARGIN * 2 + height_rest) / 2};
 
-  return GameRoute::DrawingInfo{
+  return GameRoute::CellsInfo{
       .cell_side = cell_side,
       .width_margin = width_margin,
       .height_margin = height_margin};
@@ -66,7 +89,8 @@ const GameRoute::DrawingInfo GameRoute::get_drawing_info(sf::RenderWindow &windo
 
 void GameRoute::draw_game(sf::RenderWindow &window) const
 {
-  auto info{get_drawing_info(window)};
+  auto info{get_cells_info(window)};
+  auto numbers{std::make_unique<std::vector<sf::Text>>()};
 
   for (unsigned i{0}; i < height; ++i)
     for (unsigned j{0}; j < width; ++j)
@@ -88,17 +112,32 @@ void GameRoute::draw_game(sf::RenderWindow &window) const
         break;
 
       case Cell::State::OPENED:
-        cell_shape.setFillColor(cell.get_has_mine() ? sf::Color::Black : sf::Color::Magenta);
+        if (cell.get_has_mine())
+          cell_shape.setFillColor(sf::Color::Black);
+        else
+        {
+          sf::String string{std::format(L"{}", cell.get_closest_mines_count())};
+          sf::Font &font{AssetsManager::get_font("assets/fonts/font.ttf")};
+
+          sf::Text number{string, font, 50};
+          number.setPosition(cell_shape.getPosition() + sf::Vector2f{25, 25});
+          number.setFillColor(sf::Color::Magenta);
+
+          numbers->push_back(number);
+        }
         break;
       }
 
       window.draw(cell_shape);
+
+      for (const auto &number : *numbers)
+        window.draw(number);
     }
 }
 
-void GameRoute::handle_opening_mine_event(sf::Event &event, sf::RenderWindow &window)
+void GameRoute::handle_cell_click_event(sf::Event event, sf::RenderWindow &window, GameRoute::HandleCellCallback callback)
 {
-  auto info{get_drawing_info(window)};
+  auto info{get_cells_info(window)};
 
   float mouse_click_x{static_cast<float>(event.mouseButton.x)};
   float mouse_click_y{static_cast<float>(event.mouseButton.y)};
@@ -110,5 +149,5 @@ void GameRoute::handle_opening_mine_event(sf::Event &event, sf::RenderWindow &wi
   bool correct_height_cell = height_cell > 0 && height_cell < height;
 
   if (correct_width_cell && correct_height_cell)
-    game->open_cell(static_cast<unsigned>(width_cell), static_cast<unsigned>(height_cell));
+    callback(static_cast<unsigned>(width_cell), static_cast<unsigned>(height_cell));
 }

@@ -62,7 +62,11 @@ void Game::open_cell(unsigned x, unsigned y)
   }
 }
 
-void Game::toggle_cell_flag(unsigned x, unsigned y) { return (*cells)[y * width + x].toggle_flag(); }
+void Game::toggle_cell_flag(unsigned x, unsigned y)
+{
+  if (state == Game::State::IN_PROGRESS)
+    (*cells)[y * width + x].toggle_flag();
+}
 
 void Game::init_cells(unsigned x, unsigned y)
 {
@@ -175,26 +179,21 @@ void Game::open_cells_recursive(unsigned x, unsigned y)
   auto cells_queue{std::make_unique<std::queue<CellInfo>>()};
   cells_queue->push(CellInfo{(*cells)[y * width + x], x, y});
 
-  while (!(cells_queue->empty()))
+  while (!cells_queue->empty())
   {
     CellInfo cell_info{cells_queue->front()};
     cells_queue->pop();
 
     cell_info.cell.open();
 
-    if (cell_info.cell.get_closest_mines_count() != 0)
+    if (cell_info.cell.get_closest_mines_count() > 0)
       continue;
 
-    int center_sum{static_cast<int>(cell_info.x + cell_info.y)};
     Game::WalkAroundCallback callback{
-        [this, &cells_queue, center_sum](unsigned x, unsigned y)
+        [this, &cells_queue](unsigned x, unsigned y)
         {
-          int current_sum{static_cast<int>(x + y)};
-
-          if (abs(center_sum - current_sum) != 1)
-            return;
-
           Cell &current_cell{(*cells)[y * width + x]};
+
           if (!current_cell.get_has_mine() && current_cell.get_state() == Cell::State::NOT_OPENED)
             cells_queue->push(CellInfo{current_cell, x, y});
         }};
@@ -206,7 +205,14 @@ void Game::open_all_cells()
 {
   for (unsigned i{0}; i < height; ++i)
     for (unsigned j{0}; j < width; ++j)
-      (*cells)[i * width + j].open();
+    {
+      Cell &current_cell{(*cells)[i * width + j]};
+
+      if (current_cell.get_state() == Cell::State::WITH_FLAG)
+        current_cell.toggle_flag();
+
+      current_cell.open();
+    }
 }
 
 Game::State Game::get_state() const { return state; }
