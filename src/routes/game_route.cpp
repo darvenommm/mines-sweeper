@@ -129,7 +129,7 @@ void GameRoute::draw_cell(unsigned x, unsigned y, sf::RenderWindow &window) cons
       window.draw(cell);
 
       sf::Text bomb{sf::String(L"💣"), emojis_font};
-      bomb.setFillColor(sf::Color::Red);
+      bomb.setFillColor(game->get_state() == Game::State::DEFEATED ? sf::Color::Red : sf::Color::Green);
       draw_symbol(x, y, bomb, window, sf::Vector2f(-5, -5));
     }
     else

@@ -25,6 +25,7 @@ std::unique_ptr<Game::Cells> Game::create_empty_cells() const
   return empty_mines;
 }
 
+// Need rewriting to several methods! It can be in future...
 void Game::open_cell(unsigned x, unsigned y)
 {
   switch (state)
@@ -33,39 +34,58 @@ void Game::open_cell(unsigned x, unsigned y)
     state = State::IN_PROGRESS;
     init_cells(x, y);
     open_cells_recursive(x, y);
-    return;
+    break;
 
   case State::IN_PROGRESS:
   {
-    Cell &current_cell{(*cells)[y * width + x]};
+    Cell &current_cell{get_cell(x, y)};
 
-    if (current_cell.get_has_mine())
+    switch (current_cell.get_state())
     {
-      open_all_cells();
-      state = State::DEFEATED;
-      return;
+    case Cell::State::NOT_OPENED:
+      if (current_cell.get_has_mine())
+      {
+        state = State::DEFEATED;
+        open_all_cells();
+        return;
+      }
+
+      if (current_cell.get_closest_mines_count() == 0)
+        open_cells_recursive(x, y);
+      else
+        inner_open_cell(x, y);
+      break;
+
+    case Cell::State::WITH_FLAG:
+      break;
+
+    case Cell::State::OPENED:
+      break;
     }
-
-    if (current_cell.get_state() != Cell::State::NOT_OPENED)
-      return;
-
-    if (current_cell.get_closest_mines_count() == 0)
-      open_cells_recursive(x, y);
-    else
-      (*cells)[y * width + x].open();
-    return;
+    break;
   }
 
   case State::DEFEATED:
   case State::WINNED:
     return;
   }
+
+  check_game_winning();
 }
 
 void Game::toggle_cell_flag(unsigned x, unsigned y)
 {
-  if (state == Game::State::IN_PROGRESS)
-    (*cells)[y * width + x].toggle_flag();
+  if (state != Game::State::IN_PROGRESS)
+    return;
+
+  Cell &current_cell{get_cell(x, y)};
+
+  current_cell.toggle_flag();
+
+  if (current_cell.get_has_mine())
+    correct_flags += (current_cell.get_state() == Cell::State::WITH_FLAG) ? 1 : -1;
+
+  check_game_winning();
 }
 
 void Game::init_cells(unsigned x, unsigned y)
@@ -167,6 +187,12 @@ unsigned Game::count_closest_mines(unsigned x, unsigned y, Game::Layout &layout)
   return result_count;
 }
 
+void Game::inner_open_cell(unsigned x, unsigned y)
+{
+  get_cell(x, y).open();
+  ++opened_cells;
+}
+
 void Game::open_cells_recursive(unsigned x, unsigned y)
 {
   struct CellInfo
@@ -177,27 +203,28 @@ void Game::open_cells_recursive(unsigned x, unsigned y)
   };
 
   auto cells_queue{std::make_unique<std::queue<CellInfo>>()};
-  cells_queue->push(CellInfo{(*cells)[y * width + x], x, y});
+  cells_queue->push(CellInfo{get_cell(x, y), x, y});
 
   while (!cells_queue->empty())
   {
-    CellInfo cell_info{cells_queue->front()};
+    auto [cell, x, y] = cells_queue->front();
     cells_queue->pop();
 
-    cell_info.cell.open();
+    if (cell.get_state() == Cell::State::NOT_OPENED)
+      inner_open_cell(x, y);
 
-    if (cell_info.cell.get_closest_mines_count() > 0)
+    if (cell.get_closest_mines_count() > 0)
       continue;
 
     Game::WalkAroundCallback callback{
         [this, &cells_queue](unsigned x, unsigned y)
         {
-          Cell &current_cell{(*cells)[y * width + x]};
+          Cell &current_cell{get_cell(x, y)};
 
-          if (!current_cell.get_has_mine() && current_cell.get_state() == Cell::State::NOT_OPENED)
+          if (current_cell.get_state() == Cell::State::NOT_OPENED && !current_cell.get_has_mine())
             cells_queue->push(CellInfo{current_cell, x, y});
         }};
-    walk_around_cell(cell_info.x, cell_info.y, callback);
+    walk_around_cell(x, y, callback);
   }
 }
 
@@ -237,4 +264,15 @@ void Game::walk_around_cell(unsigned x, unsigned y, Game::WalkAroundCallback cal
       else
         callback(j, i);
     }
+}
+
+Cell &Game::get_cell(unsigned x, unsigned y) { return (*cells)[y * width + x]; }
+
+void Game::check_game_winning()
+{
+  if (correct_flags == mines_count || opened_cells == width * height - mines_count)
+  {
+    state = State::WINNED;
+    open_all_cells();
+  }
 }

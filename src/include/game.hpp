@@ -47,6 +47,8 @@ private:
   unsigned width;
   unsigned height;
   unsigned mines_count;
+  unsigned correct_flags{0};
+  unsigned opened_cells{0};
   State state{State::NOT_STARTED};
 
   std::unique_ptr<Cells> create_empty_cells() const;
@@ -61,11 +63,14 @@ private:
   unsigned count_closest_mines(unsigned x, unsigned y, Layout &) const;
 
   // main methods
+  void inner_open_cell(unsigned x, unsigned y);
   void open_cells_recursive(unsigned x, unsigned y);
   void open_all_cells();
 
   // helpers
   void walk_around_cell(unsigned x, unsigned y, WalkAroundCallback callback) const;
+  Cell &get_cell(unsigned x, unsigned y);
+  void check_game_winning();
 };
 
 #endif
