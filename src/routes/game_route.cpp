@@ -1,14 +1,10 @@
-#include <format>
+#include <string>
 #include <iostream>
 
 #include "assets_manager.hpp"
 #include "router.hpp"
 #include "game_route.hpp"
 #include "menu_route.hpp"
-
-const unsigned GAME_MARGIN = 20;
-const sf::Color CELL_COLOR{192, 192, 192}; // grey color
-const unsigned CELL_OUTLINE_WIDTH = 2;
 
 void GameRoute::handle_event(sf::Event &event, Router &router, sf::RenderWindow &window)
 {
@@ -53,33 +49,37 @@ void GameRoute::update(float) {}
 
 void GameRoute::render(sf::RenderWindow &window)
 {
-  float window_width{static_cast<float>(window.getSize().x)};
-  float window_height{static_cast<float>(window.getSize().y)};
-  sf::RectangleShape bg{sf::Vector2f{window_width, window_height}};
-  bg.setFillColor(sf::Color::White);
-
   window.clear();
-  window.draw(bg);
+
+  draw_background(window);
   draw_game(window);
+
   window.display();
 }
 
 std::unique_ptr<Game> GameRoute::init_game() { return std::make_unique<Game>(width, height, mines_count); }
+
+void GameRoute::draw_background(sf::RenderWindow &window) const
+{
+  sf::RectangleShape bg{sf::Vector2f{window.getSize()}};
+  bg.setFillColor(BACKGROUND_COLOR);
+  window.draw(bg);
+}
 
 const GameRoute::CellsInfo GameRoute::get_cells_info(sf::RenderWindow &window) const
 {
   unsigned window_width{window.getSize().x};
   unsigned window_height{window.getSize().y};
 
-  unsigned cell_width{(window_width - GAME_MARGIN * 2) / static_cast<unsigned>(width)};
-  unsigned cell_height{(window_height - GAME_MARGIN * 2) / static_cast<unsigned>(height)};
-  float cell_side{static_cast<float>(std::min(cell_width, cell_height))};
+  unsigned cell_width{(window_width - GAME_MARGIN * 2) / width};
+  unsigned cell_height{(window_height - GAME_MARGIN * 2) / height};
+  unsigned cell_side{std::min(cell_width, cell_height)};
 
-  float width_rest{window_width - GAME_MARGIN * 2 - cell_side * width};
-  float width_margin{static_cast<float>(GAME_MARGIN * 2 + width_rest) / 2};
+  unsigned width_rest{window_width - GAME_MARGIN * 2 - cell_side * width};
+  unsigned width_margin{(GAME_MARGIN * 2 + width_rest) / 2};
 
-  float height_rest{window_height - GAME_MARGIN * 2 - cell_side * height};
-  float height_margin{static_cast<float>(GAME_MARGIN * 2 + height_rest) / 2};
+  unsigned height_rest{window_height - GAME_MARGIN * 2 - cell_side * height};
+  unsigned height_margin{(GAME_MARGIN * 2 + height_rest) / 2};
 
   return GameRoute::CellsInfo{
       .cell_side = cell_side,
@@ -89,50 +89,79 @@ const GameRoute::CellsInfo GameRoute::get_cells_info(sf::RenderWindow &window) c
 
 void GameRoute::draw_game(sf::RenderWindow &window) const
 {
-  auto info{get_cells_info(window)};
-  auto numbers{std::make_unique<std::vector<sf::Text>>()};
+  for (unsigned y{0}; y < height; ++y)
+    for (unsigned x{0}; x < width; ++x)
+      draw_cell(x, y, window);
+}
 
-  for (unsigned i{0}; i < height; ++i)
-    for (unsigned j{0}; j < width; ++j)
+void GameRoute::draw_cell(unsigned x, unsigned y, sf::RenderWindow &window) const
+{
+  auto [cell_side, width_margin, height_margin] = get_cells_info(window);
+  const Cell &current_cell{game->get_cells()[y * width + x]};
+
+  sf::RectangleShape cell{sf::Vector2f{sf::Vector2u{cell_side, cell_side}}};
+  sf::Vector2u position{x * cell_side + width_margin, y * cell_side + height_margin};
+  cell.setPosition(sf::Vector2f{position});
+  cell.setOutlineThickness(CELL_OUTLINE_BORDER_WIDTH);
+  cell.setOutlineColor(CELL_BORDER_COLOR);
+  cell.setFillColor(DEFAULT_CELL_COLOR);
+
+  switch (current_cell.get_state())
+  {
+  case Cell::State::NOT_OPENED:
+    window.draw(cell);
+    return;
+
+  case Cell::State::WITH_FLAG:
+  {
+    window.draw(cell);
+
+    sf::Text flag{sf::String{L"🏳️"}, emojis_font};
+    flag.setFillColor(sf::Color::Red);
+    draw_symbol(x, y, flag, window, sf::Vector2f(-5, -5));
+    return;
+  }
+
+  case Cell::State::OPENED:
+    if (current_cell.get_has_mine())
     {
-      sf::RectangleShape cell_shape{sf::Vector2f{info.cell_side, info.cell_side}};
-      cell_shape.setPosition(sf::Vector2f{info.cell_side * j + info.width_margin, info.cell_side * i + info.height_margin});
-      cell_shape.setOutlineThickness(static_cast<float>(CELL_OUTLINE_WIDTH));
-      cell_shape.setOutlineColor(sf::Color::Black);
+      cell.setFillColor(WITH_BOMB_CELL_COLOR);
+      window.draw(cell);
 
-      Cell cell{game->get_cells()[i * width + j]};
-      switch (cell.get_state())
-      {
-      case Cell::State::NOT_OPENED:
-        cell_shape.setFillColor(CELL_COLOR);
-        break;
-
-      case Cell::State::WITH_FLAG:
-        cell_shape.setFillColor(sf::Color::Red);
-        break;
-
-      case Cell::State::OPENED:
-        if (cell.get_has_mine())
-          cell_shape.setFillColor(sf::Color::Black);
-        else
-        {
-          sf::String string{std::format(L"{}", cell.get_closest_mines_count())};
-          sf::Font &font{AssetsManager::get_font("assets/fonts/font.ttf")};
-
-          sf::Text number{string, font, 50};
-          number.setPosition(cell_shape.getPosition() + sf::Vector2f{25, 25});
-          number.setFillColor(sf::Color::Magenta);
-
-          numbers->push_back(number);
-        }
-        break;
-      }
-
-      window.draw(cell_shape);
-
-      for (const auto &number : *numbers)
-        window.draw(number);
+      sf::Text bomb{sf::String(L"💣"), emojis_font};
+      bomb.setFillColor(sf::Color::Red);
+      draw_symbol(x, y, bomb, window, sf::Vector2f(-5, -5));
     }
+    else
+    {
+      cell.setFillColor(OPENED_CELL_COLOR);
+      window.draw(cell);
+
+      if (current_cell.get_closest_mines_count())
+      {
+        const sf::String number{std::to_string(current_cell.get_closest_mines_count())};
+        sf::Text text_number{number, numbers_font};
+        text_number.setFillColor(NUMBER_COLOR);
+        draw_symbol(x, y, text_number, window, sf::Vector2f(5, -2));
+      }
+    }
+    return;
+  }
+}
+
+void GameRoute::draw_symbol(unsigned x, unsigned y, sf::Text &text, sf::RenderWindow &window, sf::Vector2f correction_vector) const
+{
+  auto [cell_side, width_margin, height_margin] = get_cells_info(window);
+
+  float half_cell{static_cast<float>(cell_side) / 2};
+  float x_coordinate{x * cell_side + width_margin + half_cell};
+  float y_coordinate{y * cell_side + height_margin + half_cell};
+
+  text.setCharacterSize(half_cell);
+  text.setOrigin(sf::Vector2f{half_cell / 2, half_cell / 2});
+  text.setPosition(sf::Vector2f{x_coordinate, y_coordinate} + correction_vector);
+
+  window.draw(text);
 }
 
 void GameRoute::handle_cell_click_event(sf::Event event, sf::RenderWindow &window, GameRoute::HandleCellCallback callback)

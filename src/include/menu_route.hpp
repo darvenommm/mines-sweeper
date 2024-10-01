@@ -26,7 +26,7 @@ public:
 
 private:
   sf::Texture &bg_texture{AssetsManager::get_texture("assets/images/menu-bg.jpeg")};
-  sf::Font &font{AssetsManager::get_font("assets/fonts/font.ttf")};
+  sf::Font &font{AssetsManager::get_font("assets/fonts/start_menu.ttf")};
   std::unique_ptr<std::vector<sf::Text>> items{std::make_unique<std::vector<sf::Text>>()};
   int current_item{static_cast<int>(Routes::GAME)};
 
