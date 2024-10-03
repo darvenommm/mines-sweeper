@@ -25,6 +25,9 @@ add_executable(
     src/routes/settings_route.cpp
     src/routes/game_route.cpp
     src/game/game.cpp
+    src/game/cells_field.cpp
+    src/game/base_cell.cpp
+    src/game/empty_cell.cpp
     src/game/cell.cpp
 )
 
@@ -34,5 +37,11 @@ add_custom_target(copy_assets
 add_dependencies(${PROJECT_NAME} copy_assets)
 
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/include)
+target_include_directories(
+    ${PROJECT_NAME} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/include/core
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/include/game
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/include/routes
+)
 target_link_libraries(${PROJECT_NAME} sfml-system sfml-window sfml-graphics sfml-audio)

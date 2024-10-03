@@ -24,7 +24,7 @@ void GameRoute::handle_event(sf::Event &event, Router &router, sf::RenderWindow 
       GameRoute::HandleCellCallback leftClickCallback{
           [this](unsigned x, unsigned y)
           {
-            game->open_cell(x, y);
+            game->open(x, y);
           }};
       handle_cell_click_event(event, window, leftClickCallback);
     }
@@ -33,7 +33,7 @@ void GameRoute::handle_event(sf::Event &event, Router &router, sf::RenderWindow 
       GameRoute::HandleCellCallback rightClickCallback{
           [this](unsigned x, unsigned y)
           {
-            game->toggle_cell_flag(x, y);
+            game->toggle_flag(x, y);
           }};
       handle_cell_click_event(event, window, rightClickCallback);
     }
@@ -57,7 +57,10 @@ void GameRoute::render(sf::RenderWindow &window)
   window.display();
 }
 
-std::unique_ptr<Game> GameRoute::init_game() { return std::make_unique<Game>(width, height, mines_count); }
+std::unique_ptr<Game> GameRoute::init_game()
+{
+  return std::make_unique<Game>(std::make_unique<CellsField>(width, height, mines_count));
+}
 
 void GameRoute::draw_background(sf::RenderWindow &window) const
 {
@@ -97,7 +100,7 @@ void GameRoute::draw_game(sf::RenderWindow &window) const
 void GameRoute::draw_cell(unsigned x, unsigned y, sf::RenderWindow &window) const
 {
   auto [cell_side, width_margin, height_margin] = get_cells_info(window);
-  const Cell &current_cell{game->get_cells()[y * width + x]};
+  const BaseCell *current_cell{game->get_cell(x, y)};
 
   sf::RectangleShape cell{sf::Vector2f{sf::Vector2u{cell_side, cell_side}}};
   sf::Vector2u position{x * cell_side + width_margin, y * cell_side + height_margin};
@@ -106,7 +109,7 @@ void GameRoute::draw_cell(unsigned x, unsigned y, sf::RenderWindow &window) cons
   cell.setOutlineColor(CELL_BORDER_COLOR);
   cell.setFillColor(DEFAULT_CELL_COLOR);
 
-  switch (current_cell.get_state())
+  switch (current_cell->get_state())
   {
   case Cell::State::NOT_OPENED:
     window.draw(cell);
@@ -123,7 +126,7 @@ void GameRoute::draw_cell(unsigned x, unsigned y, sf::RenderWindow &window) cons
   }
 
   case Cell::State::OPENED:
-    if (current_cell.get_has_mine())
+    if (dynamic_cast<const Bomb *>(current_cell))
     {
       cell.setFillColor(WITH_BOMB_CELL_COLOR);
       window.draw(cell);
@@ -134,12 +137,13 @@ void GameRoute::draw_cell(unsigned x, unsigned y, sf::RenderWindow &window) cons
     }
     else
     {
+      const Cell *current_cell1{dynamic_cast<const Cell *>(current_cell)};
       cell.setFillColor(OPENED_CELL_COLOR);
       window.draw(cell);
 
-      if (current_cell.get_closest_mines_count())
+      if (current_cell1->get_mines_count())
       {
-        const sf::String number{std::to_string(current_cell.get_closest_mines_count())};
+        const sf::String number{std::to_string(current_cell1->get_mines_count())};
         sf::Text text_number{number, numbers_font};
         text_number.setFillColor(NUMBER_COLOR);
         draw_symbol(x, y, text_number, window, sf::Vector2f(5, -2));

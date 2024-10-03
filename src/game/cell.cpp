@@ -1,33 +1,15 @@
+#include <algorithm>
+
 #include "cell.hpp"
 
-Cell::Cell(bool has_mine, unsigned closest_mines_count)
-    : has_mine{has_mine}, closest_mines_count{closest_mines_count} {}
-
-void Cell::open()
+Cell::Cell(unsigned mines_count) : BaseCell()
 {
-  if (state == State::NOT_OPENED)
-    state = State::OPENED;
+  set_mines_count(mines_count);
 }
 
-void Cell::toggle_flag()
+void Cell::set_mines_count(unsigned mines_count)
 {
-  switch (state)
-  {
-  case State::NOT_OPENED:
-    state = State::WITH_FLAG;
-    break;
-
-  case State::WITH_FLAG:
-    state = State::NOT_OPENED;
-    break;
-
-  default:
-    break;
-  }
+  this->mines_count = std::min(mines_count, MAX_CLOSEST_MINES_COUNT);
 }
 
-Cell::State Cell::get_state() const { return state; }
-
-bool Cell::get_has_mine() const { return has_mine; }
-
-unsigned Cell::get_closest_mines_count() const { return closest_mines_count; }
+unsigned Cell::get_mines_count() const { return mines_count; }
