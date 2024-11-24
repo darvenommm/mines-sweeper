@@ -1,6 +1,5 @@
 #include "router.hpp"
 #include "menu_route.hpp"
-#include "settings_route.hpp"
 #include "game_route.hpp"
 
 MenuRoute::MenuRoute(Routes current_item) : current_item{static_cast<int>(current_item)} {}
@@ -16,13 +15,13 @@ void MenuRoute::handle_event(sf::Event &event, Router &router, sf::RenderWindow 
       break;
 
     case sf::Keyboard::Scancode::Up:
-      if (++current_item > static_cast<int>(Routes::SETTINGS))
+      if (++current_item > static_cast<int>(Routes::EXIT))
         current_item = static_cast<int>(Routes::GAME);
       break;
 
     case sf::Keyboard::Scancode::Down:
       if (--current_item < static_cast<int>(Routes::GAME))
-        current_item = static_cast<int>(Routes::SETTINGS);
+        current_item = static_cast<int>(Routes::EXIT);
       break;
 
     case sf::Keyboard::Scancode::Enter:
@@ -32,8 +31,8 @@ void MenuRoute::handle_event(sf::Event &event, Router &router, sf::RenderWindow 
         router.change_route(std::make_unique<GameRoute>());
         break;
 
-      case static_cast<int>(Routes::SETTINGS):
-        router.change_route(std::make_unique<SettingsRoute>());
+      case static_cast<int>(Routes::EXIT):
+        window.close();
         break;
       }
       break;
@@ -78,7 +77,7 @@ void MenuRoute::init_items(sf::RenderWindow &window)
   items->push_back(game_item);
 
   sf::Text settings_item{};
-  settings_item.setString(L"Settings");
+  settings_item.setString(L"Exit");
   items->push_back(settings_item);
 
   int item_index = static_cast<int>(Routes::GAME);

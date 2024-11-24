@@ -22,7 +22,6 @@ add_executable(
     src/core/router.cpp
     src/core/assets_manager.cpp
     src/routes/menu_route.cpp
-    src/routes/settings_route.cpp
     src/routes/game_route.cpp
     src/game/game.cpp
     src/game/cells_field.cpp

@@ -146,7 +146,7 @@ void GameRoute::draw_cell(unsigned x, unsigned y, sf::RenderWindow &window) cons
         const sf::String number{std::to_string(current_cell1->get_mines_count())};
         sf::Text text_number{number, numbers_font};
         text_number.setFillColor(NUMBER_COLOR);
-        draw_symbol(x, y, text_number, window, sf::Vector2f(5, -2));
+        draw_symbol(x, y, text_number, window, sf::Vector2f(9, -3));
       }
     }
     return;

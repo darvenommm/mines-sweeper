@@ -12,7 +12,7 @@ public:
   enum class Routes : int
   {
     GAME,
-    SETTINGS,
+    EXIT,
   };
 
   MenuRoute(Routes current_item = Routes::GAME);

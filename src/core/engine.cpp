@@ -36,7 +36,7 @@ void Engine::init_window()
   if (window)
     return;
 
-  auto new_window{std::make_unique<sf::RenderWindow>(sf::VideoMode::getDesktopMode(), L"Mine Sweeper", sf::Style::Fullscreen)};
+  auto new_window{std::make_unique<sf::RenderWindow>(sf::VideoMode::getDesktopMode(), L"Mine Sweeper")};
   window.reset(new_window.release());
 }
 

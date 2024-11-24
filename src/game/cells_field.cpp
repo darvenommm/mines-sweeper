@@ -96,7 +96,6 @@ void CellsField::fill_randomly()
 
   float mines_count{static_cast<float>(this->mines_count)};
   float rest{static_cast<float>(square - guarantee_without_bomb_count)};
-  std::cout << "@#@# " << mines_count << ' ' << rest << ' ' << guarantee_without_bomb_count << std::endl;
 
   for (unsigned y{0}; y < height; ++y)
     for (unsigned x{0}; x < width; ++x, --rest)
@@ -111,8 +110,6 @@ void CellsField::fill_randomly()
 
       auto a = dis(gen);
       bool has_mine = (mines_count / rest) > a;
-
-      std::cout << "@#@# " << a << ' ' << (mines_count / rest) << ' ' << has_mine << std::endl;
 
       current_cell.set_future_state(has_mine ? State::HAS_MINE : State::NOT_HAS_MINE);
       mines_count -= has_mine ? 1 : 0;
@@ -149,17 +146,6 @@ void CellsField::fill_in_real_cells()
         throw std::runtime_error(error_message);
       }
     }
-
-  for (unsigned y{0}; y < height; ++y)
-  {
-    for (unsigned x{0}; x < width; ++x)
-    {
-      EmptyCell &current_cell{get_empty_cell(x, y)};
-      std::cout << (current_cell.get_future_state() == EmptyCell::FutureState::HAS_MINE) << ' ';
-    }
-
-    std::cout << std::endl;
-  }
 
   cells = std::move(filled_cells);
 }
