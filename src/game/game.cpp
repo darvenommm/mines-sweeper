@@ -1,4 +1,5 @@
 #include <queue>
+#include <iostream>
 
 #include "game.hpp"
 
@@ -105,7 +106,7 @@ void Game::open_recursive(unsigned x, unsigned y)
   auto cells_queue{std::make_unique<std::queue<CellInfo>>()};
   cells_queue->push(CellInfo{start_cell, x, y});
 
-  while (!cells_queue->empty())
+  while (!(cells_queue->empty()))
   {
     auto [cell, x, y] = cells_queue->front();
     cells_queue->pop();
@@ -161,7 +162,7 @@ void Game::open_with_flags(unsigned x, unsigned y)
           if (dynamic_cast<Bomb *>(current_cell))
             defeat();
           else
-            open_cell(x, y);
+            open_recursive(x, y);
         }};
     cells_field->walk_around(x, y, opening_callback);
   }

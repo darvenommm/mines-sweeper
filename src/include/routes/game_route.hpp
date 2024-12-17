@@ -36,9 +36,9 @@ private:
   sf::Color WITH_BOMB_CELL_COLOR{sf::Color::Black};
   sf::Color NUMBER_COLOR{sf::Color::Blue};
 
-  unsigned width{10};
-  unsigned height{10};
-  unsigned mines_count{10};
+  unsigned width{15};
+  unsigned height{15};
+  unsigned mines_count{30};
 
   std::unique_ptr<Game> game{init_game()};
   std::unique_ptr<Game> init_game();
